@@ -1,4 +1,4 @@
 all:
-	g++ cliente/cliente.cpp utils/utils.cpp -o client
+	g++ editorAPI/editorlib.cpp -o editorAPI
 clean:
-	rm ./client.exe
+	rm ./editorAPI.exe
