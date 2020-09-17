@@ -21,9 +21,10 @@ int ConexaoRawSocket(char *device)
     printf("Erro no Socket\n");
     exit(-1);
   }
-
+  // configura o a interface de requests
   memset(&ir, 0, sizeof(struct ifreq));  	/*dispositivo eth0*/
   memcpy(ir.ifr_name, device, sizeof(device));
+  // ifr_name da interface = device
   if (ioctl(soquete, SIOCGIFINDEX, &ir) == -1) {
     printf("Erro no ioctl\n");
     exit(-1);
