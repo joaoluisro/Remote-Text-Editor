@@ -18,5 +18,4 @@ void ver(std::string nome_arq);
 void linha(std::string num_linha, std::string nome_arq);
 void linhas(std::string num_linha_inicial, std::string num_linha_final, std::string nome_arq);
 void edit(std::string num_linha, std::string nome_arq, std::string novo_texto);
-//void send_message(std::string message, int socket);
-//std::string receive_message(int socket);
+std::string convert_command(std::vector<std::string> args, int count, int tam, std::string parity, std::string data);

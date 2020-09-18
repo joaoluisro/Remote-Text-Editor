@@ -8,6 +8,27 @@
 #include <unistd.h>
 using namespace std;
 
+string int_to_binary_char(int n, int size){
+  int *binaryNum = new int[size];
+  int i = 0;
+  while (n > 0) {
+    binaryNum[i] = n % 2;
+    n = n / 2;
+    i++;
+  }
+  char *binary_char = new char[size];
+  if(size == 4) strcpy(binary_char, "0000");
+  else strcpy(binary_char, "00000000");
+  int k = size - 1;
+  for(int j = i - 1; j >= 0 ; j--){
+    char c = '0' + binaryNum[j];
+    binary_char[k] = c;
+    k--;
+  }
+  std::string str(binary_char);
+  return binary_char;
+}
+
 int binary_char_to_int(const char *binary_num)
 {
     int num = atoi(binary_num);
@@ -102,22 +123,94 @@ vector<string> parse_command(string input){
   }
   return args;
 }
+
 /*
-void send_message(string message, int socket){
-  // converte pra string em formato char*
-  const char *c_message = message.c_str();
-
-  // envia a mensagem
-  send(socket, c_message, strlen(c_message), 0);
-}
-
-string receive_message(int socket){
-  // buffer de 1024 bytes
-  char buffer[1024] = {0};
-
-  // lê a mensagem a armazena no buffer
-  int val_read = read(socket, buffer, 1024);
-  string str(buffer);
-  return buffer;
-}
+o 0000 – cd – nome do diretório viaja na área de dados
+o 0001 – ls
+o 0010 – ver – nome arquivo viaja na área de dados
+o 0011 – linha – nome arquivo viaja na área de dados
+o 0100 – linhas – nome arquivo viaja na área de dados
+o 0101 – edit – nome arquivo viaja na área de dados
 */
+
+
+string msg_type(string arg){
+
+    string type;
+    if(arg == "cd"){
+      type = "0000";
+    }else if(arg == "ls"){
+      type = "0001";
+    }else if(arg == "ver"){
+      type = "0010";
+    }else if(arg == "linha"){
+      type = "0011";
+    }else if(arg == "linhas"){
+      type = "0100";
+    }else if(arg == "edit"){
+      type = "0101";
+    }else if(arg == "ACK"){
+      type = "1000";
+    }else if(arg == "NACK"){
+      type = "1001";
+    }else if(arg == "lines"){
+      type = "1010";
+    }else if(arg == "c_ls"){
+      type = "1011";
+    }else if(arg == "c_arq"){
+      type = "1100";
+    }else if(arg == "end_t"){
+      type = "1101";
+    }else if(arg == "error"){
+      type = "1111";
+    }
+    return type;
+}
+
+
+vector<vector<string>> convert_user_command(vector<string> args){
+  // verifica a quantidade necessária de mensagens a serem enviadas
+  int msg_n = 1;
+
+  // cd -> nome do diretorio > 15 bytes
+
+  // ls -> arquivos listados > 15 bytes
+
+  // ver -> nome do arquivo > 15 bytes
+
+
+}
+
+
+// envelopa a mensagem adicionando os campos de marcador, tamanho, tipo, sequencialização, e paridade.
+
+string convert_command(vector<string> args,
+                              int count,
+                              int tam,
+                              string parity,
+                              string data){
+
+  vector<string> converted_message;
+  // adiciona o marcador
+  converted_message.push_back("01111110");
+
+  // adiciona o tamanho
+  converted_message.push_back(int_to_binary_char(tam, 4));
+
+  // adiciona a sequencialização
+  converted_message.push_back(int_to_binary_char(count, 8));
+
+  // adiciona o tipo
+  converted_message.push_back(msg_type(args[0]));
+
+  //adiciona os dados
+  converted_message.push_back(data);
+
+  // adiciona a paridade
+  converted_message.push_back(parity);
+
+  // junta tudo na mensagem
+  string msg;
+  for(int i = 0; i < converted_message.size(); i++) msg += converted_message[i];
+  return msg;
+}
