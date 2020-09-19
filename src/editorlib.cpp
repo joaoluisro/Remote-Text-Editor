@@ -2,6 +2,7 @@
 #include "../headers/ConexaoRawSocket.h"
 #include <bits/stdc++.h>
 #include <string>
+#include <fstream>
 #include <string.h>
 #include <stdlib.h>
 #include <vector>
@@ -68,6 +69,12 @@ string receive_message(int socket){
   return buffer;
 }
 
+bool wait_message(int socket){
+  char buffer[1024] = {0};
+  int val_read = read(socket, buffer, 1024);
+  cout << val_read;
+}
+
 /*
   cd     <nome_dir>
   lcd    <nome-dir>
@@ -79,9 +86,10 @@ string receive_message(int socket){
   edit   <num_linha> <nome_arq> <novo_texto>
 */
 
-void cd(string nome_dir){
-  string shell_command = "cd " + nome_dir;
-  system(shell_command.c_str());
+void cd(string nome_dir, string &home_dir){
+  home_dir = nome_dir;
+  //string shell_command = "cd " + nome_dir;
+  //system(shell_command.c_str());
 }
 
 void ls(){
@@ -167,21 +175,6 @@ string msg_type(string arg){
     return type;
 }
 
-
-vector<vector<string>> convert_user_command(vector<string> args){
-  // verifica a quantidade necessária de mensagens a serem enviadas
-  int msg_n = 1;
-
-  // cd -> nome do diretorio > 15 bytes
-
-  // ls -> arquivos listados > 15 bytes
-
-  // ver -> nome do arquivo > 15 bytes
-
-
-}
-
-
 // envelopa a mensagem adicionando os campos de marcador, tamanho, tipo, sequencialização, e paridade.
 
 string convert_command(vector<string> args,
@@ -213,4 +206,32 @@ string convert_command(vector<string> args,
   string msg;
   for(int i = 0; i < converted_message.size(); i++) msg += converted_message[i];
   return msg;
+}
+
+// "separa" a mensagem recebida do cliente
+
+vector<string> divide_msg(string msg){
+  vector<string> divided_msg;
+
+  // recebe a primeira string com 8 caracteres -> marcador
+  divided_msg.push_back(msg.substr(0, 8));
+
+  // recebe a segunda string com 4 caracteres -> tamanho
+  divided_msg.push_back(msg.substr(8, 4));
+
+  string tam_s = msg.substr(8,4);
+  int tam = binary_char_to_int(tam_s.c_str());
+
+  // recebe a terceira string com 8 caracteres -> sequencialização
+  divided_msg.push_back(msg.substr(12, 8));
+
+  // recebe a quarta string com 4 caracteres -> tipo
+  divided_msg.push_back(msg.substr(20, 4));
+
+  //recebe o campo de dados
+  divided_msg.push_back(msg.substr(24, tam));
+
+  // recebe a paridade
+  divided_msg.push_back(msg.substr(24 + tam, 8));
+  return divided_msg;
 }
