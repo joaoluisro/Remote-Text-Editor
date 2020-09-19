@@ -53,11 +53,11 @@ int main(){
 
     // envia a mensagem
     send_message(mensagem, socket);
-    //string answer;
-    //answer = receive_message(socket);
+
     // espera a resposta
-    //string answer = receive_message(socket);
-    //cout << answer << "\n";
+    string raw_msg = receive_message(socket);
+
+    cout << raw_msg;
     count++;
   }
 }
