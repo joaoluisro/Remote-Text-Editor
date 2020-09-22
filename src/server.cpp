@@ -5,13 +5,11 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #define PORT 8081
 
 using namespace std;
-extern int errno;
 void interpret_msg(vector<vector<string>> messages){
 
 }
@@ -28,33 +26,48 @@ vector<vector<string>> read_msg(vector<string> args){
 }
 
 int main(){
+
+
   // conecta ao cliente
   int socket = ConexaoRawSocket("lo");
 
-  // indica o diretório raiz
-  string home_dir;
-  system("pwd > tmp.txt");
-  ifstream tmpfile("tmp.txt");
-  getline(tmpfile, home_dir);
-  system("rm tmp.txt");
+  // inicia a sequencialização
+  int seq_server = 0;
+  int received_seq;
+  int seq_client = 0;
 
-  // inicia a conexão, espera a mensagem do cliente
-  bool close_connection = false;
-  string raw_msg = receive_message(socket);
-  vector<string> d_msg = divide_msg(raw_msg);
-  for(int i = 0; i < d_msg.size(); i++){
-    cout << d_msg[i] << "\n";
-  }
+  // mensagem a ser recebida
+  string raw_msg;
+
+  vector<string> parsed_input;
+
+  // mensagem interpretada
+  vector<string> interpreted_msg;
+
+  string received_type;
+
+  // recebe a primeira mensagem
+  raw_msg = receive_message(socket);
+  interpreted_msg = divide_msg(raw_msg);
+  received_seq = get_received_seq(interpreted_msg);
 
   while(1){
 
-    // responde
+    // prepara uma resposta
+    parsed_input = parse_input("ls");
+    raw_msg = input_to_msg(parsed_input, seq_server, 11, "00001111", "hello client");
     send_message(raw_msg, socket);
-    raw_msg = receive_message(socket);
 
-    d_msg = divide_msg(raw_msg);
-    for(int i = 0; i < d_msg.size(); i++){
-      cout << d_msg[i] << "\n";
+    // espera o cliente
+    raw_msg = receive_message(socket);
+    interpreted_msg = divide_msg(raw_msg);
+    received_seq = get_received_seq(interpreted_msg);
+    received_type = interpreted_msg[3];
+
+    if(received_type != "0001" && received_seq >= seq_server){
+      // a mensagem é do cliente
+      cout << raw_msg << endl;
+      seq_server++;
     }
 
   }

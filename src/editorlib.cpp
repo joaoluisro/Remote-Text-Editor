@@ -21,7 +21,7 @@ string int_to_binary_char(int n, int size){
   if(size == 4) strcpy(binary_char, "0000");
   else strcpy(binary_char, "00000000");
   int k = size - 1;
-  for(int j = i - 1; j >= 0 ; j--){
+  for(int j = 0; j < i ; j++){
     char c = '0' + binaryNum[j];
     binary_char[k] = c;
     k--;
@@ -64,7 +64,10 @@ void send_message(string msg, int socket){
 
 string receive_message(int socket){
   char buffer[1024] = {0};
-  read(socket, buffer, 1024);
+  int valread = read(socket, buffer, 1024);
+  if(valread == -1){
+    perror("Erro na leitura");
+  }
   std::string str(buffer);
   return buffer;
 }
@@ -117,7 +120,7 @@ void edit(string num_linha, string nome_arq, string novo_texto){
   system(shell_command.c_str());
 }
 
-vector<string> parse_command(string input){
+vector<string> parse_input(string input){
   // args : guarda o comando e seus argumentos
   vector<string> args;
   int previous = 0;
@@ -177,7 +180,7 @@ string msg_type(string arg){
 
 // envelopa a mensagem adicionando os campos de marcador, tamanho, tipo, sequencialização, e paridade.
 
-string convert_command(vector<string> args,
+string input_to_msg(vector<string> args,
                               int count,
                               int tam,
                               string parity,
@@ -234,4 +237,36 @@ vector<string> divide_msg(string msg){
   // recebe a paridade
   divided_msg.push_back(msg.substr(24 + tam, 8));
   return divided_msg;
+}
+
+bool is_from_server(vector<string> d_msg){
+  string cmp = d_msg[2];
+  const char *tmp = cmp.c_str();
+  cout << "count from other : " << binary_char_to_int(tmp) << "\n";
+  cout << "\n";
+  return((binary_char_to_int(tmp) + 1) % 2 == 0);
+}
+
+bool is_from_client(vector<string> d_msg){
+  string cmp = d_msg[2];
+  const char *tmp = cmp.c_str();
+  cout << "count from other : " << binary_char_to_int(tmp) << "\n";
+  cout << "\n";
+  return(binary_char_to_int(tmp) % 2 == 0);
+}
+
+int get_received_seq(vector<string> interpreted_msg){
+  string cmp = interpreted_msg[2];
+  const char *tmp = cmp.c_str();
+  int received_seq = binary_char_to_int(tmp);
+  return received_seq;
+}
+
+string get_dir(){
+  string home_dir;
+  system("pwd > tmp.txt");
+  ifstream tmpfile("tmp.txt");
+  getline(tmpfile, home_dir);
+  system("rm tmp.txt");
+  return home_dir;
 }
