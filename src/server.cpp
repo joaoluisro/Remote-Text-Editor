@@ -6,27 +6,24 @@
 #include <fstream>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include <stdio.h>
 #define PORT 8081
 
 using namespace std;
-void interpret_msg(vector<vector<string>> messages){
 
-}
+void interpret_msg(vector<string> messages, string type, string curr_dir){
+  // comando ls
+  if(type == "0001"){
+    string ls_content = ls(curr_dir);
 
-vector<vector<string>> read_msg(vector<string> args){
-  // verifica a quantidade necessária de mensagens a serem enviadas
-  int msg_n = 1;
-
-  // cd -> nome do diretorio > 15 bytes
-
-  // ls -> arquivos listados > 15 bytes
-
-  // ver -> nome do arquivo > 15 bytes
+  }
 }
 
 int main(){
 
+  // diretório inicial
+  string curr_dir = get_dir();
 
   // conecta ao cliente
   int socket = ConexaoRawSocket("lo");
@@ -34,41 +31,40 @@ int main(){
   // inicia a sequencialização
   int seq_server = 0;
   int received_seq;
-  int seq_client = 0;
+  int expected = 0;
 
   // mensagem a ser recebida
   string raw_msg;
 
   vector<string> parsed_input;
 
-  // mensagem interpretada
-  vector<string> interpreted_msg;
+  // mensagem divida
+  vector<string> divided_msg;
 
   string received_type;
 
-  // recebe a primeira mensagem
-  raw_msg = receive_message(socket);
-  interpreted_msg = divide_msg(raw_msg);
-  received_seq = get_received_seq(interpreted_msg);
 
   while(1){
 
-    // prepara uma resposta
-    parsed_input = parse_input("ls");
-    raw_msg = input_to_msg(parsed_input, seq_server, 11, "00001111", "hello client");
-    send_message(raw_msg, socket);
-
     // espera o cliente
-    raw_msg = receive_message(socket);
-    interpreted_msg = divide_msg(raw_msg);
-    received_seq = get_received_seq(interpreted_msg);
-    received_type = interpreted_msg[3];
-
-    if(received_type != "0001" && received_seq >= seq_server){
-      // a mensagem é do cliente
+    do{
+      raw_msg = receive_message(socket, true);
       cout << raw_msg << endl;
+    }while(raw_msg == "timeout");
+    divided_msg = divide_msg(raw_msg);
+    received_seq = get_received_seq(divided_msg);
+    received_type = divided_msg[3];
+
+    if(received_type != "0001" && received_seq == expected){
+      cout << raw_msg << endl;
+      // a mensagem é do cliente
+      //interpret_msg(divided_msg, received_type, curr_dir);
+
+      string response = wrap_msg(seq_server, END_OF_TRANSMISSION, "00001111", "");
+      send_message(response, socket);
+      execute(received_type, divided_msg, curr_dir);
+      expected++;
       seq_server++;
     }
-
   }
 }

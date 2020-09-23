@@ -30,8 +30,7 @@ string int_to_binary_char(int n, int size){
   return binary_char;
 }
 
-int binary_char_to_int(const char *binary_num)
-{
+int binary_char_to_int(const char *binary_num){
     int num = atoi(binary_num);
     int dec_value = 0;
     int base = 1;
@@ -62,20 +61,28 @@ void send_message(string msg, int socket){
   write(socket, msg_c, strlen(msg_c));
 }
 
-string receive_message(int socket){
-  char buffer[1024] = {0};
-  int valread = read(socket, buffer, 1024);
-  if(valread == -1){
-    perror("Erro na leitura");
-  }
-  std::string str(buffer);
-  return buffer;
-}
+string receive_message(int socket, bool time_out){
 
-bool wait_message(int socket){
-  char buffer[1024] = {0};
-  int val_read = read(socket, buffer, 1024);
-  cout << val_read;
+  fd_set set;
+  struct timeval timeout;
+  FD_ZERO(&set);
+  FD_SET(socket, &set);
+  timeout.tv_sec = 3;
+  timeout.tv_usec = 0;
+  int rv = select(socket + 1, &set, NULL, NULL, &timeout);
+
+  if(rv == 0 && time_out){
+    return "timeout";
+  }
+  else{
+    char buffer[1024] = {0};
+    int valread = read(socket, buffer, 1024);
+    if(valread == -1){
+      perror("Erro na leitura");
+    }
+    std::string str(buffer);
+    return buffer;
+  }
 }
 
 /*
@@ -90,14 +97,20 @@ bool wait_message(int socket){
 */
 
 void cd(string nome_dir, string &home_dir){
-  home_dir = nome_dir;
-  //string shell_command = "cd " + nome_dir;
-  //system(shell_command.c_str());
+  home_dir += "/" + nome_dir;
 }
 
-void ls(){
-  string shell_command = "ls";
+string ls(string curr_dir){
+  string shell_command = "ls " + curr_dir  + " > tmp.txt";
   system(shell_command.c_str());
+  ifstream tmpfile("tmp.txt");
+  string ls_content = "";
+  string line;
+  while(tmpfile >> line){
+    ls_content += line + "\n";
+  }
+  system("rm tmp.txt");
+  return ls_content;
 }
 
 void ver(string nome_arq){
@@ -144,7 +157,6 @@ o 0100 – linhas – nome arquivo viaja na área de dados
 o 0101 – edit – nome arquivo viaja na área de dados
 */
 
-
 string msg_type(string arg){
 
     string type;
@@ -178,8 +190,38 @@ string msg_type(string arg){
     return type;
 }
 
-// envelopa a mensagem adicionando os campos de marcador, tamanho, tipo, sequencialização, e paridade.
+string wrap_msg(int count,
+                string type,
+                string parity,
+                string data){
 
+  vector<string> converted_message;
+  // adiciona o marcador
+  converted_message.push_back("01111110");
+
+  // adiciona o tamanho
+  converted_message.push_back(int_to_binary_char(data.size(), 4));
+
+  // adiciona a sequencialização
+  converted_message.push_back(int_to_binary_char(count, 8));
+
+  // adiciona o tipo
+  converted_message.push_back(type);
+
+  // adiciona os dados
+  converted_message.push_back(data);
+
+  // adiciona a paridade
+  converted_message.push_back(parity);
+
+  // junta tudo na mensagem
+  string msg;
+  for(int i = 0; i < converted_message.size(); i++) msg += converted_message[i];
+  return msg;
+}
+
+// envelopa a mensagem adicionando os campos de marcador, tamanho, tipo, sequencialização, e paridade.
+/*
 string input_to_msg(vector<string> args,
                               int count,
                               int tam,
@@ -210,7 +252,7 @@ string input_to_msg(vector<string> args,
   for(int i = 0; i < converted_message.size(); i++) msg += converted_message[i];
   return msg;
 }
-
+*/
 // "separa" a mensagem recebida do cliente
 
 vector<string> divide_msg(string msg){
@@ -239,22 +281,6 @@ vector<string> divide_msg(string msg){
   return divided_msg;
 }
 
-bool is_from_server(vector<string> d_msg){
-  string cmp = d_msg[2];
-  const char *tmp = cmp.c_str();
-  cout << "count from other : " << binary_char_to_int(tmp) << "\n";
-  cout << "\n";
-  return((binary_char_to_int(tmp) + 1) % 2 == 0);
-}
-
-bool is_from_client(vector<string> d_msg){
-  string cmp = d_msg[2];
-  const char *tmp = cmp.c_str();
-  cout << "count from other : " << binary_char_to_int(tmp) << "\n";
-  cout << "\n";
-  return(binary_char_to_int(tmp) % 2 == 0);
-}
-
 int get_received_seq(vector<string> interpreted_msg){
   string cmp = interpreted_msg[2];
   const char *tmp = cmp.c_str();
@@ -269,4 +295,12 @@ string get_dir(){
   getline(tmpfile, home_dir);
   system("rm tmp.txt");
   return home_dir;
+}
+
+void execute(string type, vector<string> divided_msg, string &curr_dir){
+
+  if(type == "0000"){
+    cd(divided_msg[4], curr_dir);
+    cout << divided_msg[4]<< endl;
+  }
 }
