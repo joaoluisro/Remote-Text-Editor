@@ -29,12 +29,12 @@ int main(){
   int socket = ConexaoRawSocket("lo");
 
   // inicia a sequencialização
-  int seq_server = 0;
+  int seq_server = 1;
   int received_seq;
   int expected = 0;
 
   // mensagem a ser recebida
-  string raw_msg;
+  string raw_msg, buffer;
 
   vector<string> parsed_input;
 
@@ -45,26 +45,22 @@ int main(){
 
 
   while(1){
+    //  espera a primeira mensagem
 
-    // espera o cliente
     do{
-      raw_msg = receive_message(socket, true);
-      cout << raw_msg << endl;
-    }while(raw_msg == "timeout");
-    divided_msg = divide_msg(raw_msg);
-    received_seq = get_received_seq(divided_msg);
-    received_type = divided_msg[3];
+      buffer = receive_message(socket, true);
+      if(buffer == "timeout") continue;
+      divided_msg = divide_msg(buffer);
+      received_seq = get_received_seq(divided_msg);
+      received_type = divided_msg[3];
+    }while(received_seq != expected);
+    expected += 2;
 
-    if(received_type != "0001" && received_seq == expected){
-      cout << raw_msg << endl;
-      // a mensagem é do cliente
-      //interpret_msg(divided_msg, received_type, curr_dir);
-
-      string response = wrap_msg(seq_server, END_OF_TRANSMISSION, "00001111", "");
-      send_message(response, socket);
-      execute(received_type, divided_msg, curr_dir);
-      expected++;
-      seq_server++;
-    }
+    // executa o comando
+    execute(received_type, divided_msg, curr_dir);
+    raw_msg = wrap_msg(seq_server, ACK, "00001111", "");
+    send_message(raw_msg, socket);
+    seq_server += 2;
   }
+
 }

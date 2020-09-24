@@ -160,9 +160,9 @@ o 0101 – edit – nome arquivo viaja na área de dados
 string msg_type(string arg){
 
     string type;
-    if(arg == "cd"){
+    if(arg == "lcd"){
       type = "0000";
-    }else if(arg == "ls"){
+    }else if(arg == "lls"){
       type = "0001";
     }else if(arg == "ver"){
       type = "0010";
@@ -298,9 +298,11 @@ string get_dir(){
 }
 
 void execute(string type, vector<string> divided_msg, string &curr_dir){
-
   if(type == "0000"){
     cd(divided_msg[4], curr_dir);
     cout << divided_msg[4]<< endl;
+  }
+  else if(type == "0001"){
+    cout << ls(curr_dir);
   }
 }
