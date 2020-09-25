@@ -113,9 +113,22 @@ string ls(string curr_dir){
   return ls_content;
 }
 
-void ver(string nome_arq){
-  string shell_command = "cat " + nome_arq;
+string ver(string nome_arq){
+  string shell_command = "cat " + nome_arq + " > tmp.txt";
   system(shell_command.c_str());
+  ifstream tmpfile("tmp.txt");
+  string ver_content = "";
+  string line;
+  int i = 1;
+  while(tmpfile >> line){
+    cout << line << endl;
+
+    ver_content += to_string(i) + " : " + line + "\n";
+    i++;
+  }
+  system("rm tmp.txt");
+  cout << ver_content << endl;
+  return ver_content;
 }
 
 void linha(string num_linha, string nome_arq){
@@ -190,14 +203,41 @@ string msg_type(string arg){
     return type;
 }
 
+string get_parity(string marker, string type, string tam, string seq){
+  string parity = "";
+  char c1, c2, c3, c4;
+  for(int i = 0; i < 8; i++){
+    int b1, b2, b3, b4;
+    c1 = marker[i];
+    c2 = seq[i];
+    b1 = c1 - '0';
+    b2 = c2 - '0';
+    if(i < 4){
+      c3 = tam[i];
+      c4 = type[i];
+      b3 = c3 - '0';
+      b4 = c4 - '0';
+      parity += '0' + (b1 ^ b2 ^ b3 ^ b4);
+    }else{
+      parity += '0' + (b1 ^ b2);
+    }
+  }
+  return parity;
+}
+
+bool check_parity(vector<string> d_msg ){
+  string received_parity = get_parity(d_msg[0], d_msg[3], d_msg[1], d_msg[2]);
+  return(d_msg[5] == received_parity);
+}
+
 string wrap_msg(int count,
+                string marker,
                 string type,
-                string parity,
                 string data){
 
   vector<string> converted_message;
   // adiciona o marcador
-  converted_message.push_back("01111110");
+  converted_message.push_back(marker);
 
   // adiciona o tamanho
   converted_message.push_back(int_to_binary_char(data.size(), 4));
@@ -211,38 +251,7 @@ string wrap_msg(int count,
   // adiciona os dados
   converted_message.push_back(data);
 
-  // adiciona a paridade
-  converted_message.push_back(parity);
-
-  // junta tudo na mensagem
-  string msg;
-  for(int i = 0; i < converted_message.size(); i++) msg += converted_message[i];
-  return msg;
-}
-
-// envelopa a mensagem adicionando os campos de marcador, tamanho, tipo, sequencialização, e paridade.
-/*
-string input_to_msg(vector<string> args,
-                              int count,
-                              int tam,
-                              string parity,
-                              string data){
-
-  vector<string> converted_message;
-  // adiciona o marcador
-  converted_message.push_back("01111110");
-
-  // adiciona o tamanho
-  converted_message.push_back(int_to_binary_char(tam, 4));
-
-  // adiciona a sequencialização
-  converted_message.push_back(int_to_binary_char(count, 8));
-
-  // adiciona o tipo
-  converted_message.push_back(msg_type(args[0]));
-
-  //adiciona os dados
-  converted_message.push_back(data);
+  string parity = get_parity(marker, type, converted_message[1], converted_message[2]);
 
   // adiciona a paridade
   converted_message.push_back(parity);
@@ -252,7 +261,7 @@ string input_to_msg(vector<string> args,
   for(int i = 0; i < converted_message.size(); i++) msg += converted_message[i];
   return msg;
 }
-*/
+
 // "separa" a mensagem recebida do cliente
 
 vector<string> divide_msg(string msg){
@@ -295,14 +304,4 @@ string get_dir(){
   getline(tmpfile, home_dir);
   system("rm tmp.txt");
   return home_dir;
-}
-
-void execute(string type, vector<string> divided_msg, string &curr_dir){
-  if(type == "0000"){
-    cd(divided_msg[4], curr_dir);
-    cout << divided_msg[4]<< endl;
-  }
-  else if(type == "0001"){
-    cout << ls(curr_dir);
-  }
 }
